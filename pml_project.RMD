@@ -1,0 +1,62 @@
+---
+title: "Practical Machine Learning"
+output: html_document
+---
+
+#Problem Statement 
+We are provided with the data about the personal activities of a preson gathered from various smart devices. The primary goal of this project is to build a prediction model based on the given training data and apply it to the test data to predict the classe variable
+
+## Include the libraries
+```{r setoptions, warning=FALSE}
+library(caret)
+library(randomForest)
+library(e1071)
+set.seed(100)
+```
+## Loading and preprocessing the data
+Read the data and partition the training data and create training and cross validation data sets.Then we are cleaning the datasets to remove colums that dont have valid  values.
+```{r}
+train_data <- read.csv("pml-training.csv",na.strings=c("NA","#DIV/0!",""))
+test_data <-read.csv("pml-testing.csv",na.strings=c("NA","#DIV/0!",""))
+
+train <- createDataPartition(y=train_data$classe,p = 0.6,list=FALSE)
+train_data_tr <-train_data[train,]
+
+train_data_final <- apply(train_data_tr,2,function(dat) {sum(is.na(dat))})
+tr_data<-train_data_tr[,which(train_data_final < 1)]
+tr_data <- tr_data[8:ncol(tr_data)]
+
+train_data_cv <-train_data[-train,]
+train_data_cv_final <- apply(train_data_tr,2,function(dat) {sum(is.na(dat))})
+tr_cv<-train_data_cv[,which(train_data_cv_final < 1)]
+tr_cv <- tr_cv[8:ncol(tr_cv)]
+
+
+test_data_final <- apply(test_data,2,function(dat) {sum(is.na(dat))})
+test <- test_data[,which(test_data_final < 1)]
+test <- test[8:ncol(test)]
+```
+Now we create a classification model based on Naive Bayes
+```{r}
+#Create Model based on Naive Bayes classifier
+model <- naiveBayes(classe ~ ., data = tr_data)
+pred <- predict(model,tr_cv)
+
+#Calculate Accuracy and kappa 
+confusionMatrix(pred,tr_cv$classe)
+```
+It can be seen that the Naive Bayes classifier model built has accuracy of 48 percent and kappa value of 0.3.
+Next we will create a Random Forest Model for the same datasets and check its accuracy and kappa values
+
+#Create Model based on Random Forest classifier
+```{r}
+mod <- randomForest(classe ~ ., data = tr_data)
+cv_predict <-predict(mod,tr_cv)
+```
+#Calculate Accuracy and kappa 
+```{r}
+confusionMatrix(tr_cv$classe,cv_predict)
+```
+The random forest model best suits is the best model for predicting the classe variable. We can also see that the OOB rate for this model is 0.75% and is negligible.
+
+
